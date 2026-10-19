@@ -1,0 +1,331 @@
+@import "tailwindcss";
+
+/*
+ * Fonts: Fustat for English, Nikosh for Bangla.
+ * Nikosh is limited to the Bengali Unicode block (plus the joiners and Bengali digits/danda),
+ * so every Latin letter and number stays in Fustat and every Bangla letter uses Nikosh.
+ */
+@font-face {
+  font-family: 'Nikosh';
+  src: url('./fonts/Nikosh.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0980-09FF, U+200C-200D, U+25CC, U+0964-0965;
+}
+
+@theme {
+  --color-brand-50: #f0f9f2;
+  --color-brand-100: #d6eedc;
+  --color-brand-200: #a9d9b6;
+  --color-brand-300: #78c28d;
+  --color-brand-400: #5ab574;
+  --color-brand-500: #3fa055;
+  --color-brand-600: #2f8f3a;
+  --color-brand-700: #287a32;
+  --color-brand-800: #1d5a2a;
+  --color-brand-900: #134020;
+
+  /* Light-theme neutrals: 100-300 double as card borders and dividers, so they stay clearly visible on white */
+  --color-slate-50: #f2f5f9;
+  --color-slate-100: #dae1ea;
+  --color-slate-200: #bcc8d6;
+  --color-slate-300: #9aa9bb;
+  --font-sans: 'Fustat', 'Nikosh', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Fustat', 'Nikosh', system-ui, sans-serif;
+  --font-mono: 'Fustat', 'Nikosh', system-ui, sans-serif;
+}
+
+@layer base {
+  body {
+    font-family: 'Fustat', 'Nikosh', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  body { background-image: radial-gradient(900px 400px at 85% -10%, #dcf4e3 0%, transparent 60%); background-attachment: fixed; }
+  html { -webkit-text-size-adjust: 100%; }
+  input, select, textarea { font-size: 16px; }
+  @media (min-width: 640px) { input, select, textarea { font-size: inherit; } }
+
+  /* IDs, MACs and codes use the same fonts, with equal-width digits so columns line up */
+  input, select, textarea, button { font-family: inherit; }
+  code, pre, .font-mono {
+    font-family: 'Fustat', 'Nikosh', system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Sidebar motion: inline transitions are switched off for people who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .sb-motion { transition: none !important; }
+}
+
+/* Account menu beside the slim sidebar: glides out from the button */
+@keyframes account-pop-side {
+  0%   { opacity: 0; transform: translateX(-14px) scale(0.92); }
+  60%  { opacity: 1; }
+  100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+.account-pop-side {
+  transform-origin: left bottom;
+  animation: account-pop-side 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .account-pop-side { animation: none; }
+}
+
+#print-root { display: none; }
+
+/* Log modal open / close animation (opacity + slide only, so the fit-to-screen measuring stays exact) */
+@keyframes log-modal-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes log-modal-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes log-modal-panel-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes log-modal-panel-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(14px); } }
+.log-modal-overlay { animation: log-modal-fade-in 200ms ease-out both; }
+.log-modal-overlay .log-modal-panel { animation: log-modal-panel-in 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.log-modal-overlay.is-closing { animation: log-modal-fade-out 200ms ease-in both; pointer-events: none; }
+.log-modal-overlay.is-closing .log-modal-panel { animation: log-modal-panel-out 200ms ease-in both; }
+@media (prefers-reduced-motion: reduce) {
+  .log-modal-overlay, .log-modal-overlay .log-modal-panel { animation: none !important; }
+}
+
+@media print {
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .log-modal-overlay, .log-modal-overlay .log-modal-panel { animation: none !important; }
+  .log-modal-overlay { position: static !important; background: none !important; overflow: visible !important; padding: 0 !important; backdrop-filter: none !important; }
+  .log-modal-fit { zoom: 1 !important; }
+  .log-modal-panel { max-height: none !important; overflow: visible !important; box-shadow: none !important; background: none !important; padding: 0 !important; max-width: none !important; border-radius: 0 !important; }
+  body {
+    background-color: white !important;
+    color: black !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  /* Single-log print: only the copy made by LogSheetView is shown */
+  body.print-single > *:not(#print-root) {
+    display: none !important;
+  }
+  body.print-single #print-root {
+    display: block !important;
+    width: 100%;
+    background: white;
+  }
+  html, body.print-single {
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding-right: 0 !important;
+  }
+  .sheet-wrap {
+    break-after: page;
+  }
+  .sheet-wrap:last-child {
+    break-after: auto;
+  }
+  .print-only {
+    display: block !important;
+  }
+}
+
+
+/* Login: a short sideways shake when the password is rejected */
+@keyframes login-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-7px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(3px); }
+}
+.login-shake { animation: login-shake 0.4s ease-in-out; }
+@media (prefers-reduced-motion: reduce) {
+  .login-shake { animation: none; }
+}
+
+
+/* Login: the whole page is the stage */
+.login-bg {
+  background:
+    radial-gradient(60% 70% at 78% 50%, rgba(63, 160, 85, 0.1) 0%, transparent 70%),
+    radial-gradient(120% 90% at 35% 25%, #15533d 0%, #0b2f25 55%, #071f19 100%);
+}
+@media (min-width: 1024px) {
+  .login-bg {
+    background:
+      radial-gradient(40% 70% at 78% 50%, rgba(63, 160, 85, 0.1) 0%, transparent 70%),
+      radial-gradient(69% 90% at 20% 40%, #15533d 0%, #0b2f25 55%, #071f19 100%);
+  }
+}
+/* Keep Chrome's autofill from painting the glass inputs white/yellow */
+.login-input:-webkit-autofill,
+.login-input:-webkit-autofill:hover,
+.login-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #fff;
+  caret-color: #fff;
+  box-shadow: 0 0 0 1000px #164a39 inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+
+/* ------------------------------------------------------------------ */
+/* Dark mode: switched by the "dark" class on <html> (see utils/theme.ts).
+   Tailwind's colour variables are remapped here, so every screen follows without touching its markup.
+   Screen only: printing and PDFs always stay light. */
+@media screen {
+  html.dark {
+    color-scheme: dark;
+    --dk-page: #0b1410;
+    --dk-surface: #121d17;
+
+    /* neutrals (the light end becomes the dark surfaces, the dark end becomes text) */
+    --color-slate-50: #17241d;
+    --color-slate-100: #1c2b23;
+    --color-slate-200: #26372e;
+    --color-slate-300: #34493e;
+    --color-slate-400: #7f9188;
+    --color-slate-500: #9aaba2;
+    --color-slate-600: #b3c1ba;
+    --color-slate-700: #ccd8d2;
+
+    /* brand tints (the solid 400-900 brand colours keep their look so buttons stay readable) */
+    --color-brand-50: #12271b;
+    --color-brand-100: #183423;
+    --color-brand-200: #21472f;
+    --color-brand-300: #2f6a43;
+
+    /* soft status tints */
+  --color-rose-50: #2a1519;
+  --color-red-50: #2a1515;
+  --color-amber-50: #2a2110;
+  --color-emerald-50: #10261b;
+  --color-teal-50: #0f2626;
+  --color-sky-50: #0f2230;
+  --color-violet-50: #1f1830;
+  --color-purple-50: #251530;
+  --color-indigo-50: #171a33;
+  }
+
+  html.dark body {
+    background-color: var(--dk-page);
+    background-image: radial-gradient(900px 400px at 85% -10%, #14301f 0%, transparent 60%);
+    color: #dfe8e3;
+  }
+
+  .dark .bg-white, .dark .hover\:bg-white:hover, .dark .focus\:bg-white:focus, .dark .disabled\:hover\:bg-white:hover { background-color: var(--dk-surface); }
+  .dark .bg-white\/90 { background-color: color-mix(in srgb, var(--dk-surface) 90%, transparent); }
+  .dark .bg-white\/50 { background-color: color-mix(in srgb, var(--dk-surface) 50%, transparent); }
+  .dark .to-white { --tw-gradient-to: var(--dk-surface); }
+  .dark .from-white { --tw-gradient-from: var(--dk-surface); }
+  .dark .ring-white, .dark .border-white { --tw-ring-color: var(--dk-surface); border-color: var(--dk-surface); }
+  .dark [class*="bg-[#eef8f1]"] { background-color: var(--dk-page); }
+  .dark .bg-\[\#eef8f1\]\/90 { background-color: color-mix(in srgb, var(--dk-page) 90%, transparent); }
+
+  /* headings and strong text */
+  .dark .text-slate-800, .dark .hover\:text-slate-800:hover { color: #dfe8e3; }
+  .dark .text-slate-900, .dark .hover\:text-slate-900:hover { color: #eef4f0; }
+  .dark .text-\[\#1b2a4e\] { color: #e6eee9; }
+  .dark .text-brand-600, .dark .hover\:text-brand-600:hover { color: #6fcf88; }
+  .dark .text-brand-700, .dark .hover\:text-brand-700:hover { color: #86d99a; }
+  .dark .text-brand-800, .dark .hover\:text-brand-800:hover { color: #a6e6b5; }
+  .dark .text-brand-900, .dark .hover\:text-brand-900:hover { color: #c8f0d2; }
+  /* text that sits on the solid green headers stays light */
+  .dark .text-brand-100, .dark [class*="text-brand-100/"] { color: #dcf1e1; }
+
+  /* soft status tints */
+  .dark .bg-rose-100 { background-color: #3a1b21; }
+  .dark .hover\:bg-rose-100:hover { background-color: #3a1b21; }
+  .dark .border-rose-100, .dark .border-rose-200 { border-color: #5a2a33; }
+  .dark .hover\:border-rose-200:hover { border-color: #5a2a33; }
+  .dark .text-rose-500, .dark .hover\:text-rose-500:hover { color: #fb7185; }
+  .dark .text-rose-600, .dark .hover\:text-rose-600:hover { color: #fb7185; }
+  .dark .text-rose-700, .dark .hover\:text-rose-700:hover { color: #fda4af; }
+  .dark .text-rose-800, .dark .hover\:text-rose-800:hover { color: #fecdd3; }
+  .dark .text-rose-900, .dark .hover\:text-rose-900:hover { color: #ffe4e6; }
+  .dark .bg-red-100 { background-color: #3a1b1b; }
+  .dark .hover\:bg-red-100:hover { background-color: #3a1b1b; }
+  .dark .border-red-100, .dark .border-red-200 { border-color: #5a2a2a; }
+  .dark .hover\:border-red-200:hover { border-color: #5a2a2a; }
+  .dark .text-red-600, .dark .hover\:text-red-600:hover { color: #f87171; }
+  .dark .text-red-700, .dark .hover\:text-red-700:hover { color: #fca5a5; }
+  .dark .text-red-800, .dark .hover\:text-red-800:hover { color: #fecaca; }
+  .dark .bg-amber-100 { background-color: #3a2d12; }
+  .dark .hover\:bg-amber-100:hover { background-color: #3a2d12; }
+  .dark .border-amber-100, .dark .border-amber-200 { border-color: #5a4616; }
+  .dark .hover\:border-amber-200:hover { border-color: #5a4616; }
+  .dark .text-amber-600, .dark .hover\:text-amber-600:hover { color: #fbbf24; }
+  .dark .text-amber-700, .dark .hover\:text-amber-700:hover { color: #fcd34d; }
+  .dark .text-amber-800, .dark .hover\:text-amber-800:hover { color: #fde68a; }
+  .dark .text-amber-900, .dark .hover\:text-amber-900:hover { color: #fef3c7; }
+  .dark .bg-emerald-100 { background-color: #153423; }
+  .dark .hover\:bg-emerald-100:hover { background-color: #153423; }
+  .dark .border-emerald-100, .dark .border-emerald-200 { border-color: #1f4d34; }
+  .dark .hover\:border-emerald-200:hover { border-color: #1f4d34; }
+  .dark .text-emerald-600, .dark .hover\:text-emerald-600:hover { color: #34d399; }
+  .dark .text-emerald-700, .dark .hover\:text-emerald-700:hover { color: #6ee7b7; }
+  .dark .text-emerald-800, .dark .hover\:text-emerald-800:hover { color: #a7f3d0; }
+  .dark .text-emerald-900, .dark .hover\:text-emerald-900:hover { color: #d1fae5; }
+  .dark .bg-teal-100 { background-color: #143434; }
+  .dark .hover\:bg-teal-100:hover { background-color: #143434; }
+  .dark .border-teal-100, .dark .border-teal-200 { border-color: #1d4c4c; }
+  .dark .hover\:border-teal-200:hover { border-color: #1d4c4c; }
+  .dark .text-teal-600, .dark .hover\:text-teal-600:hover { color: #2dd4bf; }
+  .dark .text-teal-700, .dark .hover\:text-teal-700:hover { color: #5eead4; }
+  .dark .text-teal-800, .dark .hover\:text-teal-800:hover { color: #99f6e4; }
+  .dark .bg-sky-100 { background-color: #142e42; }
+  .dark .hover\:bg-sky-100:hover { background-color: #142e42; }
+  .dark .border-sky-100, .dark .border-sky-200 { border-color: #1e4560; }
+  .dark .hover\:border-sky-200:hover { border-color: #1e4560; }
+  .dark .text-sky-600, .dark .hover\:text-sky-600:hover { color: #38bdf8; }
+  .dark .text-sky-700, .dark .hover\:text-sky-700:hover { color: #7dd3fc; }
+  .dark .text-sky-800, .dark .hover\:text-sky-800:hover { color: #bae6fd; }
+  .dark .bg-violet-100 { background-color: #2a2142; }
+  .dark .hover\:bg-violet-100:hover { background-color: #2a2142; }
+  .dark .border-violet-100, .dark .border-violet-200 { border-color: #3f3361; }
+  .dark .hover\:border-violet-200:hover { border-color: #3f3361; }
+  .dark .text-violet-600, .dark .hover\:text-violet-600:hover { color: #a78bfa; }
+  .dark .text-violet-700, .dark .hover\:text-violet-700:hover { color: #c4b5fd; }
+  .dark .text-violet-800, .dark .hover\:text-violet-800:hover { color: #ddd6fe; }
+  .dark .bg-purple-100 { background-color: #321d42; }
+  .dark .hover\:bg-purple-100:hover { background-color: #321d42; }
+  .dark .border-purple-100, .dark .border-purple-200 { border-color: #4b2d61; }
+  .dark .hover\:border-purple-200:hover { border-color: #4b2d61; }
+  .dark .text-purple-600, .dark .hover\:text-purple-600:hover { color: #c084fc; }
+  .dark .text-purple-700, .dark .hover\:text-purple-700:hover { color: #d8b4fe; }
+  .dark .text-purple-800, .dark .hover\:text-purple-800:hover { color: #e9d5ff; }
+  .dark .bg-indigo-100 { background-color: #20254a; }
+  .dark .hover\:bg-indigo-100:hover { background-color: #20254a; }
+  .dark .border-indigo-100, .dark .border-indigo-200 { border-color: #323a70; }
+  .dark .hover\:border-indigo-200:hover { border-color: #323a70; }
+  .dark .text-indigo-600, .dark .hover\:text-indigo-600:hover { color: #818cf8; }
+  .dark .text-indigo-700, .dark .hover\:text-indigo-700:hover { color: #a5b4fc; }
+  .dark .text-indigo-800, .dark .hover\:text-indigo-800:hover { color: #c7d2fe; }
+
+  .dark input, .dark select, .dark textarea { color-scheme: dark; }
+  .dark ::placeholder { color: #6b7d74; }
+  .dark img { filter: brightness(0.92); }
+  .dark .login-bg img { filter: none; }
+}
+
+/* Theme switch: circular reveal (View Transitions API) with a colour cross-fade fallback */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) { z-index: 1; }
+::view-transition-new(root) { z-index: 2; }
+html.theme-switching * { transition: none !important; }
+
+@media (prefers-reduced-motion: no-preference) {
+  html.theme-fade, html.theme-fade *, html.theme-fade *::before, html.theme-fade *::after {
+    transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, fill 0.4s ease, stroke 0.4s ease, box-shadow 0.4s ease !important;
+  }
+}
+
+@keyframes theme-icon-in {
+  0%   { opacity: 0; transform: rotate(-90deg) scale(0.4); }
+  100% { opacity: 1; transform: rotate(0) scale(1); }
+}
+.theme-icon { animation: theme-icon-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .theme-icon { animation: none; }
+}
